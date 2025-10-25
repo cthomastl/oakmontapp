@@ -1,51 +1,109 @@
 import React, { useState } from 'react';
 
+// The helper function 'retryFetchWithExponentialBackoff' has been removed
+// to make the code more basic as requested.
+
 const App = () => {
-    // State to manage the visibility of the mobile menu
+    // State for the mobile menu
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     
-    // State to manage the contact form submission status message
+    // State for form input values
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        message: '',
+    });
+    
+    // State for form submission status message
     const [formStatus, setFormStatus] = useState({ 
         message: '', 
         visible: false,
         isSuccess: true 
     });
 
+    // Function to handle changes in form inputs
+    const handleInputChange = (e) => {
+        const { id, value } = e.target;
+        setFormData(prevData => ({
+            ...prevData,
+            [id]: value
+        }));
+    };
+
     // Function to toggle the mobile menu state
     const toggleMenu = () => {
         setIsMenuOpen(prev => !prev);
     };
 
-    // Placeholder logic for form submission
-    const handleSubmit = (e) => {
+    /**
+     * Handles form submission using a basic, single-attempt fetch call.
+     * The built-in try...catch handles network errors and non-OK HTTP responses.
+     */
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // 1. Show 'Sending' message
         setFormStatus({
             message: 'Sending message...',
             visible: true,
-            isSuccess: false
+            isSuccess: false // Not yet a success
         });
 
-        // 2. Simulate server response delay
-        setTimeout(() => {
-            // Reset form 
-            e.target.reset();
+        const submissionData = JSON.stringify(formData);
+        
+        // !!! IMPORTANT: REPLACE THIS PLACEHOLDER URL WITH YOUR ACTUAL API GATEWAY ENDPOINT URL !!!
+        // Example format: https://[your-api-id].execute-api.[region].amazonaws.com/prod/contact
+        const apiEndpoint = 'https://pkspt356uj.execute-api.us-east-1.amazonaws.com/dev'; 
+
+        const options = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: submissionData // Correctly sends the form data JSON string
+        };
+
+        try {
+            // --- BASIC API CALL ---
+            const response = await fetch(apiEndpoint, options);
             
-            // 3. Show success message
+            if (!response.ok) {
+                // This catches HTTP 4xx or 5xx responses.
+                // We attempt to get the text of the error for better logging.
+                const errorText = await response.text(); 
+                throw new Error(`HTTP error! Status: ${response.status}. Details: ${errorText.substring(0, 50)}...`);
+            }
+            // --- END BASIC API CALL ---
+            
+            // Success
             setFormStatus({
                 message: 'Success! Your message has been received.',
                 visible: true,
                 isSuccess: true
             });
 
-            // 4. Hide message after a few seconds
+            // Reset form state
+            setFormData({ name: '', email: '', message: '' });
+
+        } catch (error) {
+            // Failure (network error or non-ok response)
+            console.error('Submission error:', error);
+
+            setFormStatus({
+                message: `Error: Failed to send message. ${error.message.split('.')[0]}.`,
+                visible: true,
+                isSuccess: false
+            });
+
+        } finally {
+            // Hide message after a few seconds, regardless of success/failure
             setTimeout(() => {
                 setFormStatus(prev => ({ ...prev, visible: false }));
             }, 4000);
-            
-        }, 1500);
+        }
     };
+
+    
     
     // CSS included directly in the component for a self-contained file
     const style = `
@@ -356,30 +414,24 @@ const App = () => {
 
     return (
         <div className="oakmont-power-app">
-            {/* Inject CSS into the head */}
             <style>{style}</style>
 
-            {/* Header and Navigation */}
+            {/* Header and Navigation (omitted for brevity) */}
             <header className="header">
+                {/* ... (Navigation content) ... */}
                 <div className="container">
                     <div className="nav-content">
-                        {/* Logo */}
                         <a href="#home" className="logo">Oakmont Power</a>
-
-                        {/* Desktop Menu */}
                         <div className="nav-links">
                             <a href="#services">Services</a>
                             <a href="#contact">Contact</a>
                         </div>
-
-                        {/* Mobile Menu Button */}
                         <button 
                             className="menu-button"
                             onClick={toggleMenu}
                             aria-expanded={isMenuOpen}
                             aria-controls="mobileMenu"
                         >
-                            {/* Hamburger Icon */}
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="3" y1="12" x2="21" y2="12"></line>
                                 <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -388,8 +440,6 @@ const App = () => {
                         </button>
                     </div>
                 </div>
-
-                {/* Mobile Menu */}
                 <div 
                     className={`mobile-menu ${isMenuOpen ? 'mobile-menu-open' : ''}`}
                     style={{ maxHeight: isMenuOpen ? '200px' : '0' }}
@@ -401,7 +451,7 @@ const App = () => {
             </header>
 
             <main>
-                {/* Hero Section */}
+                {/* Hero Section (omitted for brevity) */}
                 <section id="home" className="hero">
                     <div className="container">
                         <h1>Reliable Energy for the Oakmont Community</h1>
@@ -410,13 +460,12 @@ const App = () => {
                     </div>
                 </section>
 
-                {/* Services Section */}
+                {/* Services Section (omitted for brevity) */}
                 <section id="services" className="section">
                     <div className="container">
                         <h2 className="section-title">Our Power Solutions</h2>
-                        
                         <div className="services-grid">
-                            {/* Card 1 */}
+                            {/* ... (Service cards) ... */}
                             <div className="service-card">
                                 <h3>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12L5 10M5 10L12 3L19 10M5 10V20a1 1 0 001 1h3M19 10L21 12M19 10V20a1 1 0 01-1 1h-3M12 21a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
@@ -424,8 +473,6 @@ const App = () => {
                                 </h3>
                                 <p>Simple, fixed-rate electricity plans designed for everyday home usage. Get peace of mind with our transparent billing and dependable service.</p>
                             </div>
-
-                            {/* Card 2 */}
                             <div className="service-card">
                                 <h3>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 11V7a4 4 0 00-8 0v4m.885-9.125a.5.5 0 01.71.015L12 5.295l2.405-2.205a.5.5 0 01.71.015z"></path></svg>
@@ -433,8 +480,6 @@ const App = () => {
                                 </h3>
                                 <p>Customized energy management for businesses of all sizes. Optimize power costs, reduce consumption, and maintain consistent operations.</p>
                             </div>
-
-                            {/* Card 3 */}
                             <div className="service-card">
                                 <h3>
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
@@ -454,15 +499,33 @@ const App = () => {
                             <form id="contactForm" onSubmit={handleSubmit}>
                                 <div className="form-group">
                                     <label htmlFor="name">Name</label>
-                                    <input type="text" id="name" required />
+                                    <input 
+                                        type="text" 
+                                        id="name" 
+                                        required 
+                                        value={formData.name}
+                                        onChange={handleInputChange}
+                                    />
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="email">Email</label>
-                                    <input type="email" id="email" required />
+                                    <input 
+                                        type="email" 
+                                        id="email" 
+                                        required 
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                    />
                                 </div>
                                 <div className="form-group">
                                     <label htmlFor="message">Message / Service Inquiry</label>
-                                    <textarea id="message" rows="4" required></textarea>
+                                    <textarea 
+                                        id="message" 
+                                        rows="4" 
+                                        required
+                                        value={formData.message}
+                                        onChange={handleInputChange}
+                                    ></textarea>
                                 </div>
                                 <button type="submit" className="submit-button">
                                     Send Inquiry
@@ -478,7 +541,7 @@ const App = () => {
                 </section>
             </main>
 
-            {/* Footer */}
+            {/* Footer (omitted for brevity) */}
             <footer className="footer">
                 <div className="container">
                     <p className="logo" style={{ color: '#fff', fontSize: '1.4em' }}>Oakmont Power Company</p>
